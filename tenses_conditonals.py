@@ -20,8 +20,6 @@ if "answers" not in st.session_state:
     st.session_state.answers = []
 if "submitted_questions" not in st.session_state:
     st.session_state.submitted_questions = set()
-if "user_name" not in st.session_state:
-    st.session_state.user_name = ""
 if "review_mode" not in st.session_state:
     st.session_state.review_mode = False
 if "randomized_messages" not in st.session_state:
@@ -52,30 +50,31 @@ if "randomized_messages" not in st.session_state:
 
 # ---------------------------------------------------------
 # Custom CSS for Layout
-# 1) Dark blue sidebar
-# 2) Tweak main container
+# 1) Dark Blue Sidebar w/ White Text
+# 2) Black main background, White default text, Orange headings
 # ---------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* Body background gradient */
+    /* Main page background black, default text white */
     body {
-        background: linear-gradient(to bottom right, #92fe9d, #00c9ff);
-    }
-
-    /* Sidebar styling - dark blue background, white text */
-    [data-testid="stSidebar"] {
-        background-color: #013369 !important; 
+        background-color: #000000 !important;
         color: #ffffff !important;
     }
 
-    /* Titles and subheaders coloring */
+    /* Sidebar styling - dark blue background, text white */
+    [data-testid="stSidebar"] {
+        background-color: #013369 !important;
+        color: #ffffff !important;
+    }
+
+    /* Headings remain orange (#ff5722) */
     h1, h2, h3 {
         color: #ff5722 !important;
         font-family: "Trebuchet MS", sans-serif;
     }
 
-    /* Tweak the main container for more spacing on top */
+    /* Tweak the main container for spacing on top */
     main > div {
         padding-top: 20px;
     }
@@ -85,11 +84,7 @@ st.markdown(
 )
 
 # ---------------------------------------------------------
-# Tenses Data (7 tenses) and Conditionals Data (5 conditionals)
-# ---------------------------------------------------------
-# Please paste your existing 'tenses_data' and 'conditionals_data' dictionaries here.
-# ---------------------------------------------------------
-# Data for Tenses
+# Tenses Data (Insert your 7 tenses data here)
 # ---------------------------------------------------------
 tenses_data = {
     "1": {
@@ -624,7 +619,6 @@ conditionals_data = {
     }
 }
 
-
 # ---------------------------------------------------------
 # Helper Functions
 # ---------------------------------------------------------
@@ -634,11 +628,6 @@ def reset_questions():
     st.session_state.submitted_questions = set()
     st.session_state.review_mode = False
     random.shuffle(st.session_state.randomized_messages)
-
-def personalized_name():
-    """Return the user's name if provided, or 'You' otherwise."""
-    name = st.session_state.user_name.strip()
-    return name if name else "You"
 
 def get_current_data():
     """Return the dictionary (tenses or conditionals) and item key."""
@@ -686,39 +675,38 @@ else:
         reset_questions()
 
 # ---------------------------------------------------------
-# Main Screens
+# Screens
 # ---------------------------------------------------------
 def show_welcome():
-    """A simpler welcome screen - no balloons or initial GIFs."""
+    """A simpler welcome screen - No name input, no balloons or initial GIFs."""
     st.title("Welcome to the Grammar Genius Game! 🎉✨🎮")
     st.write("""
     Get ready to boost your English grammar skills in a fun and interactive way!
     
-    1. (Optional) Enter your name to personalize your experience.
-    2. Use the sidebar to choose either Tenses or Conditionals.
-    3. Select which Tense/Conditional you want to practice.
-    4. Read how it's formed, when to use it, and see extra examples.
-    5. Answer the questions, receiving motivational feedback each time.
-    6. Once you finish all questions, you'll earn a special badge!
+    1. Use the sidebar to choose either Tenses or Conditionals.
+    2. Select which Tense/Conditional you want to practice.
+    3. Read how it's formed, when to use it, and see extra examples.
+    4. Answer the questions, receiving motivational feedback each time.
+    5. Once you finish all questions, you'll earn a special badge!
 
     Let's begin!
     """)
-    st.text_input("Your name:", key="user_name")
 
 def show_review(data_dict, item_key):
-    """Display all answered questions for the chosen Tense/Conditional."""
+    """Display all answered questions for the chosen Tense/Conditional, each answer with a trophy."""
     st.header("Review Your Answers")
     usage_cases = data_dict[item_key]["usage_cases"]
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         st.write(f"**{case['title']}**")
         st.write(f"Question: {case['question']}")
+        # Show the user's answer with a trophy 🏆
         user_answer = st.session_state.get(answer_key, "")
-        st.write(f"Your answer: {user_answer}")
-    st.write("Great job! Feel free to choose another option from the sidebar if you like.")
+        st.write(f"Your answer: {user_answer} 🏆")
+    st.write("Great job! Feel free to pick another item from the sidebar anytime.")
 
 def show_explanation_and_questions():
-    """Show explanation for the current Tense/Conditional, then questions with columns."""
+    """Show explanation for the current Tense/Conditional, then columns-based questions."""
     data_dict, item_key = get_current_data()
     if not data_dict or not item_key:
         return
@@ -760,10 +748,10 @@ def show_explanation_and_questions():
 
     # COMPLETION CHECK
     if answered_count == total_questions:
-        st.success(f"Congratulations, {personalized_name()}! You've answered all the questions!")
-        # Display a "badge" message
-        st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!*")
-        
+        st.success(f"You've answered all 10 questions for {info['name']}!")
+        # Show the "Badge Unlocked" message with a trophy
+        st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!* 🏆")
+
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
@@ -774,7 +762,6 @@ def show_explanation_and_questions():
         submit_key = f"submit_{item_key}_{i}"
 
         if submit_key in st.session_state.submitted_questions:
-            # Already answered
             st.write(f"**{case['title']}**")
             st.write(case["question"])
             user_answer = st.session_state.get(answer_key, "")
@@ -794,19 +781,18 @@ def show_explanation_and_questions():
                 st.session_state.submitted_questions.add(submit_key)
 
                 msg_index = len(st.session_state.answers) - 1
-                # Motivational message
                 if msg_index < len(st.session_state.randomized_messages):
                     msg = st.session_state.randomized_messages[msg_index]
                 else:
                     msg = st.session_state.randomized_messages[-1]
 
-                # Personalize
-                if msg and msg[0].isupper():
-                    personalized_msg = f"{personalized_name()}, {msg[0].lower() + msg[1:]}"
+                # We no longer reference a user name, just show the message
+                if msg[0].isupper():
+                    new_msg = f"{msg[0].lower() + msg[1:]}"
                 else:
-                    personalized_msg = f"{personalized_name()}, {msg}"
+                    new_msg = msg
 
-                st.success(personalized_msg)
+                st.success(new_msg)
                 st.write(f"Your answer: {user_answer}")
 
 def main():
