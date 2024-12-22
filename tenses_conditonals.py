@@ -1,7 +1,5 @@
 import streamlit as st
 import random
-from PIL import Image, ImageDraw, ImageFont
-import io
 
 # ---------------------------------------------------------
 # Set up page config with a custom layout and title
@@ -86,6 +84,10 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# ---------------------------------------------------------
+# Tenses Data (7 tenses) and Conditionals Data (5 conditionals)
+# ---------------------------------------------------------
+# Please paste your existing 'tenses_data' and 'conditionals_data' dictionaries here.
 # ---------------------------------------------------------
 # Data for Tenses
 # ---------------------------------------------------------
@@ -638,43 +640,6 @@ def personalized_name():
     name = st.session_state.user_name.strip()
     return name if name else "You"
 
-def create_certificate(name, category_name, item_name):
-    """
-    Generate a simple "Certificate" image in memory as a PIL image,
-    then return it as a downloadable bytes buffer for st.download_button.
-    Fallback to default font if arial.ttf is not available.
-    """
-    # Create a blank image (width=800, height=600)
-    img = Image.new('RGB', (800, 600), color=(255, 255, 200))
-    draw = ImageDraw.Draw(img)
-
-    # Try loading 'arial.ttf'; if not found, use default
-    try:
-        title_font = ImageFont.truetype("arial.ttf", 50)
-        body_font = ImageFont.truetype("arial.ttf", 32)
-        small_font = ImageFont.truetype("arial.ttf", 24)
-    except OSError:
-        title_font = ImageFont.load_default()
-        body_font = ImageFont.load_default()
-        small_font = ImageFont.load_default()
-
-    # Title
-    draw.text((80, 80), "Certificate of Achievement", fill=(0, 0, 0), font=title_font)
-
-    # Body text
-    text_str = f"This certifies that\n{name}\nhas successfully completed\n{item_name} in {category_name}"
-    draw.multiline_text((100, 200), text_str, fill=(10, 10, 10), font=body_font, align="center")
-
-    # Signature or date area
-    draw.text((80, 500), "Date: __________________", fill=(0, 0, 0), font=small_font)
-    draw.text((500, 500), "Signature: _____________", fill=(0, 0, 0), font=small_font)
-
-    # Convert to bytes
-    img_buffer = io.BytesIO()
-    img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)
-    return img_buffer
-
 def get_current_data():
     """Return the dictionary (tenses or conditionals) and item key."""
     if st.session_state.selected_category == "Tenses":
@@ -734,7 +699,7 @@ def show_welcome():
     3. Select which Tense/Conditional you want to practice.
     4. Read how it's formed, when to use it, and see extra examples.
     5. Answer the questions, receiving motivational feedback each time.
-    6. Once you finish all questions, enjoy a celebratory screen and earn a certificate!
+    6. Once you finish all questions, you'll earn a special badge!
 
     Let's begin!
     """)
@@ -796,17 +761,9 @@ def show_explanation_and_questions():
     # COMPLETION CHECK
     if answered_count == total_questions:
         st.success(f"Congratulations, {personalized_name()}! You've answered all the questions!")
-        # Downloadable certificate
-        category_name = st.session_state.selected_category
-        item_name = info["name"]
-        cert_buffer = create_certificate(personalized_name(), category_name, item_name)
-        st.download_button(
-            label="Download Your Certificate",
-            data=cert_buffer,
-            file_name="certificate.png",
-            mime="image/png"
-        )
-
+        # Display a "badge" message
+        st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!*")
+        
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
@@ -817,6 +774,7 @@ def show_explanation_and_questions():
         submit_key = f"submit_{item_key}_{i}"
 
         if submit_key in st.session_state.submitted_questions:
+            # Already answered
             st.write(f"**{case['title']}**")
             st.write(case["question"])
             user_answer = st.session_state.get(answer_key, "")
