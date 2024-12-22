@@ -1,6 +1,23 @@
 import streamlit as st
 import random
 
+st.set_page_config(
+    page_title="Grammar Genius App",
+    layout="wide",
+    # This sets the "base" theme to dark mode and allows you
+    # to override primary colors, background, etc.
+    theme={
+        "base": "dark",                   # Force dark base
+        "primaryColor": "#ff5722",        # Your orange
+        "backgroundColor": "#000000",     # Main background black
+        "secondaryBackgroundColor": "#013369", # Sidebar dark blue
+        "textColor": "#ffffff"            # Default text color white
+    }
+)
+
+# ... The rest of your code remains ...
+
+
 # ---------------------------------------------------------
 # Set up page config with a custom layout and title
 # ---------------------------------------------------------
