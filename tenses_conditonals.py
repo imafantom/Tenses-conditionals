@@ -1,4 +1,4 @@
-mport streamlit as st
+import streamlit as st
 import random
 import base64
 from PIL import Image, ImageDraw, ImageFont
@@ -85,7 +85,7 @@ h1, h2, h3 {
 """, unsafe_allow_html=True)
 
 # ---------------------------------------------------------
-# Data for Tenses
+# Data for Tenses (7 total) and Conditionals (5 total)
 # ---------------------------------------------------------
 tenses_data = {
     "1": {
@@ -400,9 +400,6 @@ tenses_data = {
     }
 }
 
-# ---------------------------------------------------------
-# Data for Conditionals
-# ---------------------------------------------------------
 conditionals_data = {
     "0": {
         "name": "Zero Conditional",
@@ -620,87 +617,6 @@ conditionals_data = {
     }
 }
 
-
-# ---------------------------------------------------------
-# Helper Functions
-# ---------------------------------------------------------
-def reset_questions():
-    """Reset answers, submitted questions, and review mode. Also reshuffle motivational messages."""
-    st.session_state.answers = []
-    st.session_state.submitted_questions = set()
-    st.session_state.review_mode = False
-    random.shuffle(st.session_state.randomized_messages)
-
-def personalized_name():
-    """Return the user's name if provided, or 'You' otherwise."""
-    name = st.session_state.user_name.strip()
-    return name if name else "You"
-
-def create_certificate(name, category_name, item_name):
-    """
-    Generate a simple "Certificate" image in memory as a PIL image,
-    then return it as a downloadable bytes buffer for st.download_button.
-    """
-    # Create a blank image (width=800, height=600)
-    img = Image.new('RGB', (800, 600), color=(255, 255, 200))
-    draw = ImageDraw.Draw(img)
-
-    # Title
-    title_font = ImageFont.truetype("arial.ttf", 50)
-    draw.text((80, 80), "Certificate of Achievement", fill=(0, 0, 0), font=title_font)
-
-    # Body text
-    body_font = ImageFont.truetype("arial.ttf", 32)
-    text_str = f"This certifies that\n{name}\nhas successfully completed\n{item_name} in {category_name}"
-    draw.multiline_text((100, 200), text_str, fill=(10, 10, 10), font=body_font, align="center")
-
-    # Signature or date area
-    small_font = ImageFont.truetype("arial.ttf", 24)
-    draw.text((80, 500), "Date: __________________", fill=(0, 0, 0), font=small_font)
-    draw.text((500, 500), "Signature: _____________", fill=(0, 0, 0), font=small_font)
-
-    # Convert to bytes
-    img_buffer = io.BytesIO()
-    img.save(img_buffer, format='PNG')
-    img_buffer.seek(0)
-    return img_buffer
-
-# ---------------------------------------------------------
-# Sidebar: Choose Category, Then Item
-# ---------------------------------------------------------
-st.sidebar.title("Grammar Categories")
-category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
-st.session_state.selected_category = category
-
-# Tenses
-if st.session_state.selected_category == "Tenses":
-    st.sidebar.subheader("Select a Tense")
-    tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
-    selected_option = st.sidebar.selectbox("Choose a tense to practice:", tense_options)
-
-    if selected_option != "Select a tense...":
-        current_key = selected_option.split('.')[0].strip()
-        if current_key != st.session_state.selected_item_key:
-            st.session_state.selected_item_key = current_key
-            reset_questions()
-    else:
-        st.session_state.selected_item_key = None
-        reset_questions()
-
-# Conditionals
-else:
-    st.sidebar.subheader("Select a Conditional")
-    conditional_options = ["Select a conditional..."] + [f"{key}. {conditionals_data[key]['name']}" for key in conditionals_data]
-    selected_option = st.sidebar.selectbox("Choose a conditional to practice:", conditional_options)
-
-    if selected_option != "Select a conditional...":
-        current_key = selected_option.split('.')[0].strip()
-        if current_key != st.session_state.selected_item_key:
-            st.session_state.selected_item_key = current_key
-            reset_questions()
-    else:
-        st.session_state.selected_item_key = None
-        reset_questions()
 
 def get_current_data():
     """Return the dictionary (tenses_data or conditionals_data) and item key for whichever is chosen."""
