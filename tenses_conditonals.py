@@ -1,34 +1,24 @@
 import streamlit as st
 import random
 
+##############################################################################
+# 1. PAGE CONFIG  -- must be at the top, before all other Streamlit calls
+##############################################################################
 st.set_page_config(
     page_title="Grammar Genius App",
-    layout="wide",
-    # This sets the "base" theme to dark mode and allows you
-    # to override primary colors, background, etc.
+    layout="wide",  # for more horizontal space
     theme={
-        "base": "dark",                   # Force dark base
-        "primaryColor": "#ff5722",        # Your orange
-        "backgroundColor": "#000000",     # Main background black
-        "secondaryBackgroundColor": "#013369", # Sidebar dark blue
-        "textColor": "#ffffff"            # Default text color white
+        "base": "dark",             # Force base to dark mode
+        "primaryColor": "#ff5722",  # Orange color for highlights
+        "backgroundColor": "#000000",       # Black main background
+        "secondaryBackgroundColor": "#013369",  # Dark blue sidebar
+        "textColor": "#ffffff",
     }
 )
 
-# ... The rest of your code remains ...
-
-
-# ---------------------------------------------------------
-# Set up page config with a custom layout and title
-# ---------------------------------------------------------
-st.set_page_config(
-    page_title="Grammar Genius App",
-    layout="wide"  # gives more horizontal space for columns
-)
-
-# ---------------------------------------------------------
-# Session State Initialization
-# ---------------------------------------------------------
+##############################################################################
+# 2. SESSION STATE
+##############################################################################
 if "selected_category" not in st.session_state:
     st.session_state.selected_category = "Tenses"  # default category
 if "selected_item_key" not in st.session_state:
@@ -65,21 +55,19 @@ if "randomized_messages" not in st.session_state:
     random.shuffle(motivational_sentences)
     st.session_state.randomized_messages = motivational_sentences
 
-# ---------------------------------------------------------
-# Custom CSS for Layout
-# 1) Dark Blue Sidebar w/ White Text
-# 2) Black main background, White default text, Orange headings
-# ---------------------------------------------------------
+##############################################################################
+# 3. CUSTOM CSS  -- to forcibly set background and text colors if theme fails
+##############################################################################
 st.markdown(
     """
     <style>
-    /* Main page background black, default text white */
-    body {
+    /* Force black main background if theme param doesn't override everything */
+    body, [data-testid="stAppViewContainer"], [data-testid="stAppViewBody"] {
         background-color: #000000 !important;
         color: #ffffff !important;
     }
 
-    /* Sidebar styling - dark blue background, text white */
+    /* Force dark-blue sidebar, white text */
     [data-testid="stSidebar"] {
         background-color: #013369 !important;
         color: #ffffff !important;
@@ -90,19 +78,15 @@ st.markdown(
         color: #ff5722 !important;
         font-family: "Trebuchet MS", sans-serif;
     }
-
-    /* Tweak the main container for spacing on top */
-    main > div {
-        padding-top: 20px;
-    }
     </style>
     """,
     unsafe_allow_html=True
 )
 
-# ---------------------------------------------------------
-# Tenses Data (Insert your 7 tenses data here)
-# ---------------------------------------------------------
+##############################################################################
+# 4. TENSES AND CONDITIONALS DATA -- Paste your actual data here
+##############################################################################
+
 tenses_data = {
     "1": {
         "name": "Present Simple",
@@ -636,18 +620,17 @@ conditionals_data = {
     }
 }
 
-# ---------------------------------------------------------
-# Helper Functions
-# ---------------------------------------------------------
+
+##############################################################################
+# 5. HELPER FUNCTIONS
+##############################################################################
 def reset_questions():
-    """Reset answers, submitted questions, and review mode. Also reshuffle motivational messages."""
     st.session_state.answers = []
     st.session_state.submitted_questions = set()
     st.session_state.review_mode = False
     random.shuffle(st.session_state.randomized_messages)
 
 def get_current_data():
-    """Return the dictionary (tenses or conditionals) and item key."""
     if st.session_state.selected_category == "Tenses":
         if st.session_state.selected_item_key:
             return tenses_data, st.session_state.selected_item_key
@@ -659,9 +642,9 @@ def get_current_data():
         else:
             return None, None
 
-# ---------------------------------------------------------
-# Sidebar: Choose Category & Item
-# ---------------------------------------------------------
+##############################################################################
+# 6. SIDEBAR
+##############################################################################
 st.sidebar.title("Grammar Categories")
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
 st.session_state.selected_category = category
@@ -691,11 +674,11 @@ else:
         st.session_state.selected_item_key = None
         reset_questions()
 
-# ---------------------------------------------------------
-# Screens
-# ---------------------------------------------------------
+##############################################################################
+# 7. SCREENS
+##############################################################################
 def show_welcome():
-    """A simpler welcome screen - No name input, no balloons or initial GIFs."""
+    """Simpler welcome screen, no name input, no balloons."""
     st.title("Welcome to the Grammar Genius Game! 🎉✨🎮")
     st.write("""
     Get ready to boost your English grammar skills in a fun and interactive way!
@@ -710,20 +693,19 @@ def show_welcome():
     """)
 
 def show_review(data_dict, item_key):
-    """Display all answered questions for the chosen Tense/Conditional, each answer with a trophy."""
+    """Review screen: show answered questions, each with a trophy 🏆."""
     st.header("Review Your Answers")
     usage_cases = data_dict[item_key]["usage_cases"]
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         st.write(f"**{case['title']}**")
         st.write(f"Question: {case['question']}")
-        # Show the user's answer with a trophy 🏆
+        # Mark answers with a trophy
         user_answer = st.session_state.get(answer_key, "")
         st.write(f"Your answer: {user_answer} 🏆")
-    st.write("Great job! Feel free to pick another item from the sidebar anytime.")
+    st.write("Feel free to select another item from the sidebar if you like.")
 
 def show_explanation_and_questions():
-    """Show explanation for the current Tense/Conditional, then columns-based questions."""
     data_dict, item_key = get_current_data()
     if not data_dict or not item_key:
         return
@@ -753,27 +735,23 @@ def show_explanation_and_questions():
         return
 
     st.write("### Practice Questions")
-
-    # METRICS
     colA, colB = st.columns(2)
     colA.metric("Questions Answered", f"{answered_count}")
     colB.metric("Total Questions", f"{total_questions}")
 
-    # PROGRESS BAR
     progress_val = int((answered_count / total_questions) * 100)
     st.progress(progress_val)
 
-    # COMPLETION CHECK
     if answered_count == total_questions:
+        # Unlock a "Badge" with emoticon for the item
         st.success(f"You've answered all 10 questions for {info['name']}!")
-        # Show the "Badge Unlocked" message with a trophy
         st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!* 🏆")
 
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
 
-    # QUESTIONS
+    # Display question columns
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
@@ -785,7 +763,6 @@ def show_explanation_and_questions():
             st.write(f"Your answer: {user_answer}")
             continue
 
-        # Two-column question layout
         q_col, a_col = st.columns([2, 3])
         with q_col:
             st.write(f"**{case['title']}**")
@@ -803,7 +780,7 @@ def show_explanation_and_questions():
                 else:
                     msg = st.session_state.randomized_messages[-1]
 
-                # We no longer reference a user name, just show the message
+                # Just show the message; no user name
                 if msg[0].isupper():
                     new_msg = f"{msg[0].lower() + msg[1:]}"
                 else:
@@ -812,6 +789,9 @@ def show_explanation_and_questions():
                 st.success(new_msg)
                 st.write(f"Your answer: {user_answer}")
 
+##############################################################################
+# 8. MAIN EXECUTION
+##############################################################################
 def main():
     if st.session_state.selected_item_key is None:
         show_welcome()
