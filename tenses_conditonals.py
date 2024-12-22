@@ -1,11 +1,10 @@
 import streamlit as st
 import random
-import base64
 from PIL import Image, ImageDraw, ImageFont
 import io
 
 # ---------------------------------------------------------
-# Set up page config with a custom layout and title
+# PAGE CONFIG
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Grammar Genius App",
@@ -13,7 +12,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# Session State Initialization
+# SESSION STATE
 # ---------------------------------------------------------
 if "selected_category" not in st.session_state:
     st.session_state.selected_category = "Tenses"  # default category
@@ -54,38 +53,44 @@ if "randomized_messages" not in st.session_state:
     st.session_state.randomized_messages = motivational_sentences
 
 # ---------------------------------------------------------
-# Custom CSS:
-# 1) Colorful background
-# 2) Sidebar styling
+# CUSTOM CSS FOR LAYOUT
 # ---------------------------------------------------------
-st.markdown("""
-<style>
-/* Body background gradient */
-body {
-    background: linear-gradient(to bottom right, #92fe9d, #00c9ff);
-}
+st.markdown(
+    """
+    <style>
+    /* Body background gradient */
+    body {
+        background: linear-gradient(to bottom right, #92fe9d, #00c9ff);
+    }
 
-/* Sidebar styling */
-[data-testid="stSidebar"] {
-    background-color: #f0f0f0 !important;
-    color: #333333 !important;
-}
+    /* Sidebar styling */
+    [data-testid="stSidebar"] {
+        background-color: #f0f0f0 !important;
+        color: #333333 !important;
+    }
 
-/* Tweak the main container for more spacing */
-main > div {
-    padding-top: 20px;
-}
+    /* Titles and subheaders coloring */
+    h1, h2, h3 {
+        color: #ff5722 !important;
+        font-family: "Trebuchet MS", sans-serif;
+    }
 
-/* Titles and subheaders coloring */
-h1, h2, h3 {
-    color: #ff5722 !important;
-    font-family: "Trebuchet MS", sans-serif;
-}
-</style>
-""", unsafe_allow_html=True)
+    /* Tweak the main container for more spacing on top */
+    main > div {
+        padding-top: 20px;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 # ---------------------------------------------------------
-# Data for Tenses (7 total) and Conditionals (5 total)
+# DATA FOR TENSES & CONDITIONALS
+# ---------------------------------------------------------
+# (Truncated below for brevity, but assume they are the same
+#  as in the previous code snippet with 7 tenses and 5 conditionals.)
+# ---------------------------------------------------------
+# Data for Tenses
 # ---------------------------------------------------------
 tenses_data = {
     "1": {
@@ -400,6 +405,9 @@ tenses_data = {
     }
 }
 
+# ---------------------------------------------------------
+# Data for Conditionals
+# ---------------------------------------------------------
 conditionals_data = {
     "0": {
         "name": "Zero Conditional",
@@ -617,9 +625,52 @@ conditionals_data = {
     }
 }
 
+# ---------------------------------------------------------
+# HELPER FUNCTIONS
+# ---------------------------------------------------------
+def reset_questions():
+    """Reset answers, submitted questions, and review mode. Also reshuffle motivational messages."""
+    st.session_state.answers = []
+    st.session_state.submitted_questions = set()
+    st.session_state.review_mode = False
+    random.shuffle(st.session_state.randomized_messages)
+
+def personalized_name():
+    """Return the user's name if provided, or 'You' otherwise."""
+    name = st.session_state.user_name.strip()
+    return name if name else "You"
+
+def create_certificate(name, category_name, item_name):
+    """
+    Generate a simple "Certificate" image in memory as a PIL image,
+    then return it as a downloadable bytes buffer for st.download_button.
+    """
+    # Create a blank image (width=800, height=600)
+    img = Image.new('RGB', (800, 600), color=(255, 255, 200))
+    draw = ImageDraw.Draw(img)
+
+    # Title
+    title_font = ImageFont.truetype("arial.ttf", 50)
+    draw.text((80, 80), "Certificate of Achievement", fill=(0, 0, 0), font=title_font)
+
+    # Body text
+    body_font = ImageFont.truetype("arial.ttf", 32)
+    text_str = f"This certifies that\n{name}\nhas successfully completed\n{item_name} in {category_name}"
+    draw.multiline_text((100, 200), text_str, fill=(10, 10, 10), font=body_font, align="center")
+
+    # Signature or date area
+    small_font = ImageFont.truetype("arial.ttf", 24)
+    draw.text((80, 500), "Date: __________________", fill=(0, 0, 0), font=small_font)
+    draw.text((500, 500), "Signature: _____________", fill=(0, 0, 0), font=small_font)
+
+    # Convert to bytes
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)
+    return img_buffer
 
 def get_current_data():
-    """Return the dictionary (tenses_data or conditionals_data) and item key for whichever is chosen."""
+    """Return the dictionary and item key for whichever category/item is chosen."""
     if st.session_state.selected_category == "Tenses":
         if st.session_state.selected_item_key:
             return tenses_data, st.session_state.selected_item_key
@@ -632,34 +683,43 @@ def get_current_data():
             return None, None
 
 # ---------------------------------------------------------
-# Main Screens
+# SIDEBAR: CHOOSE CATEGORY & ITEM
+# ---------------------------------------------------------
+st.sidebar.title("Grammar Categories")
+category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
+st.session_state.selected_category = category
+
+if st.session_state.selected_category == "Tenses":
+    st.sidebar.subheader("Select a Tense")
+    tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
+    selected_option = st.sidebar.selectbox("Choose a tense to practice:", tense_options)
+    if selected_option != "Select a tense...":
+        current_key = selected_option.split('.')[0].strip()
+        if current_key != st.session_state.selected_item_key:
+            st.session_state.selected_item_key = current_key
+            reset_questions()
+    else:
+        st.session_state.selected_item_key = None
+        reset_questions()
+else:
+    st.sidebar.subheader("Select a Conditional")
+    conditional_options = ["Select a conditional..."] + [f"{key}. {conditionals_data[key]['name']}" for key in conditionals_data]
+    selected_option = st.sidebar.selectbox("Choose a conditional to practice:", conditional_options)
+    if selected_option != "Select a conditional...":
+        current_key = selected_option.split('.')[0].strip()
+        if current_key != st.session_state.selected_item_key:
+            st.session_state.selected_item_key = current_key
+            reset_questions()
+    else:
+        st.session_state.selected_item_key = None
+        reset_questions()
+
+# ---------------------------------------------------------
+# MAIN SCREENS
 # ---------------------------------------------------------
 def show_welcome():
-    """Welcome screen with fireworks and cat, no references to dogs."""
-    st.markdown("""
-    <style>
-    @keyframes fadeOut {
-      from {opacity: 1;}
-      to {opacity: 0;}
-    }
-    #catgif {
-      animation: fadeOut 10s forwards;
-    }
-    .custom-welcome-title {
-      font-size: 3rem;
-      font-family: Arial, sans-serif;
-      font-weight: bold;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-    # Fireworks + Cat GIF
-    st.markdown('<img src="https://media.giphy.com/media/l0Exk8EUzSLsrErEQ/giphy.gif" width="300">', unsafe_allow_html=True)
-    st.markdown('<div id="catgif"><img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="200"></div>', unsafe_allow_html=True)
-
-    st.markdown("""
-    <div class="custom-welcome-title">Welcome to the Grammar Genius Game! 🎉✨🎮</div>
-    """, unsafe_allow_html=True)
+    """A simpler welcome screen with no balloons or initial GIFs."""
+    st.title("Welcome to the Grammar Genius Game! 🎉✨🎮")
 
     st.write("""
     Get ready to boost your English grammar skills in a fun and interactive way!
@@ -674,7 +734,6 @@ def show_welcome():
     Let's begin!
     """)
     st.text_input("Your name:", key="user_name")
-    st.balloons()
 
 def show_review(data_dict, item_key):
     """Display all answered questions for the chosen Tense/Conditional."""
@@ -695,20 +754,6 @@ def show_explanation_and_questions():
         return
 
     info = data_dict[item_key]
-
-    # Fade-out cat gif at top
-    st.markdown("""
-    <style>
-    @keyframes fadeOut {
-      from {opacity: 1;}
-      to {opacity: 0;}
-    }
-    #catgif {
-      animation: fadeOut 10s forwards;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    st.markdown('<div id="catgif"><img src="https://media.giphy.com/media/JIX9t2j0ZTN9S/giphy.gif" width="200"></div>', unsafe_allow_html=True)
 
     st.header(info["name"])
     st.subheader("How is it formed?")
@@ -734,22 +779,19 @@ def show_explanation_and_questions():
 
     st.write("### Practice Questions")
 
-    # Show metrics: Questions answered vs. total
+    # METRICS
     colA, colB = st.columns(2)
     colA.metric("Questions Answered", f"{answered_count}")
     colB.metric("Total Questions", f"{total_questions}")
 
-    # Also show a progress bar (0-100%)
+    # PROGRESS BAR
     progress_val = int((answered_count / total_questions) * 100)
     st.progress(progress_val)
 
-    # If all answered, celebrate
+    # COMPLETION CHECK
     if answered_count == total_questions:
         st.success(f"Congratulations, {personalized_name()}! You've answered all the questions!")
-        st.markdown('<img src="https://media.giphy.com/media/5Zesu5VPNGJlm/giphy.gif" width="300">', unsafe_allow_html=True)
-        st.balloons()
-
-        # Offer a "Download Certificate" button
+        # Downloadable certificate
         category_name = st.session_state.selected_category
         item_name = info["name"]
         cert_buffer = create_certificate(personalized_name(), category_name, item_name)
@@ -764,7 +806,7 @@ def show_explanation_and_questions():
             st.session_state.review_mode = True
         return
 
-    # Display questions in a "better layout" using columns
+    # QUESTIONS
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
@@ -777,7 +819,7 @@ def show_explanation_and_questions():
             st.write(f"Your answer: {user_answer}")
             continue
 
-        # New question layout with columns
+        # Better layout with columns
         q_col, a_col = st.columns([2, 3])
         with q_col:
             st.write(f"**{case['title']}**")
@@ -796,7 +838,7 @@ def show_explanation_and_questions():
                 else:
                     msg = st.session_state.randomized_messages[-1]
 
-                # Personalize
+                # Personalized
                 if msg and msg[0].isupper():
                     personalized_msg = f"{personalized_name()}, {msg[0].lower() + msg[1:]}"
                 else:
@@ -805,11 +847,7 @@ def show_explanation_and_questions():
                 st.success(personalized_msg)
                 st.write(f"Your answer: {user_answer}")
 
-# ---------------------------------------------------------
-# Main
-# ---------------------------------------------------------
 def main():
-    """Show welcome if no item is selected, else show the explanation & questions."""
     if st.session_state.selected_item_key is None:
         show_welcome()
     else:
