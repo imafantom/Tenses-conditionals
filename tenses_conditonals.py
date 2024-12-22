@@ -1,5 +1,16 @@
-import streamlit as st
+mport streamlit as st
 import random
+import base64
+from PIL import Image, ImageDraw, ImageFont
+import io
+
+# ---------------------------------------------------------
+# Set up page config with a custom layout and title
+# ---------------------------------------------------------
+st.set_page_config(
+    page_title="Grammar Genius App",
+    layout="wide"  # gives more horizontal space for columns
+)
 
 # ---------------------------------------------------------
 # Session State Initialization
@@ -41,6 +52,37 @@ if "randomized_messages" not in st.session_state:
     ]
     random.shuffle(motivational_sentences)
     st.session_state.randomized_messages = motivational_sentences
+
+# ---------------------------------------------------------
+# Custom CSS:
+# 1) Colorful background
+# 2) Sidebar styling
+# ---------------------------------------------------------
+st.markdown("""
+<style>
+/* Body background gradient */
+body {
+    background: linear-gradient(to bottom right, #92fe9d, #00c9ff);
+}
+
+/* Sidebar styling */
+[data-testid="stSidebar"] {
+    background-color: #f0f0f0 !important;
+    color: #333333 !important;
+}
+
+/* Tweak the main container for more spacing */
+main > div {
+    padding-top: 20px;
+}
+
+/* Titles and subheaders coloring */
+h1, h2, h3 {
+    color: #ff5722 !important;
+    font-family: "Trebuchet MS", sans-serif;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # Data for Tenses
@@ -578,6 +620,7 @@ conditionals_data = {
     }
 }
 
+
 # ---------------------------------------------------------
 # Helper Functions
 # ---------------------------------------------------------
@@ -593,6 +636,35 @@ def personalized_name():
     name = st.session_state.user_name.strip()
     return name if name else "You"
 
+def create_certificate(name, category_name, item_name):
+    """
+    Generate a simple "Certificate" image in memory as a PIL image,
+    then return it as a downloadable bytes buffer for st.download_button.
+    """
+    # Create a blank image (width=800, height=600)
+    img = Image.new('RGB', (800, 600), color=(255, 255, 200))
+    draw = ImageDraw.Draw(img)
+
+    # Title
+    title_font = ImageFont.truetype("arial.ttf", 50)
+    draw.text((80, 80), "Certificate of Achievement", fill=(0, 0, 0), font=title_font)
+
+    # Body text
+    body_font = ImageFont.truetype("arial.ttf", 32)
+    text_str = f"This certifies that\n{name}\nhas successfully completed\n{item_name} in {category_name}"
+    draw.multiline_text((100, 200), text_str, fill=(10, 10, 10), font=body_font, align="center")
+
+    # Signature or date area
+    small_font = ImageFont.truetype("arial.ttf", 24)
+    draw.text((80, 500), "Date: __________________", fill=(0, 0, 0), font=small_font)
+    draw.text((500, 500), "Signature: _____________", fill=(0, 0, 0), font=small_font)
+
+    # Convert to bytes
+    img_buffer = io.BytesIO()
+    img.save(img_buffer, format='PNG')
+    img_buffer.seek(0)
+    return img_buffer
+
 # ---------------------------------------------------------
 # Sidebar: Choose Category, Then Item
 # ---------------------------------------------------------
@@ -600,8 +672,8 @@ st.sidebar.title("Grammar Categories")
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
 st.session_state.selected_category = category
 
+# Tenses
 if st.session_state.selected_category == "Tenses":
-    # Tenses section
     st.sidebar.subheader("Select a Tense")
     tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
     selected_option = st.sidebar.selectbox("Choose a tense to practice:", tense_options)
@@ -614,8 +686,9 @@ if st.session_state.selected_category == "Tenses":
     else:
         st.session_state.selected_item_key = None
         reset_questions()
+
+# Conditionals
 else:
-    # Conditionals section
     st.sidebar.subheader("Select a Conditional")
     conditional_options = ["Select a conditional..."] + [f"{key}. {conditionals_data[key]['name']}" for key in conditionals_data]
     selected_option = st.sidebar.selectbox("Choose a conditional to practice:", conditional_options)
@@ -629,11 +702,8 @@ else:
         st.session_state.selected_item_key = None
         reset_questions()
 
-# ---------------------------------------------------------
-# Decide Which Data to Use
-# ---------------------------------------------------------
 def get_current_data():
-    """Return the dictionary and item info for whichever category/item is chosen."""
+    """Return the dictionary (tenses_data or conditionals_data) and item key for whichever is chosen."""
     if st.session_state.selected_category == "Tenses":
         if st.session_state.selected_item_key:
             return tenses_data, st.session_state.selected_item_key
@@ -649,7 +719,7 @@ def get_current_data():
 # Main Screens
 # ---------------------------------------------------------
 def show_welcome():
-    """Welcome screen with fireworks and cat, no references to dog GIFs."""
+    """Welcome screen with fireworks and cat, no references to dogs."""
     st.markdown("""
     <style>
     @keyframes fadeOut {
@@ -682,8 +752,8 @@ def show_welcome():
     2. Use the sidebar to choose either Tenses or Conditionals.
     3. Select which Tense/Conditional you want to practice.
     4. Read how it's formed, when to use it, and see extra examples.
-    5. Answer the 10 questions, receiving motivational feedback each time.
-    6. Finish all questions to see a special celebration screen!
+    5. Answer the questions, receiving motivational feedback each time.
+    6. Once you finish all questions, enjoy a celebratory screen and earn a certificate!
 
     Let's begin!
     """)
@@ -703,7 +773,7 @@ def show_review(data_dict, item_key):
     st.write("Great job! Feel free to choose another option from the sidebar if you like.")
 
 def show_explanation_and_questions():
-    """Show explanation for the current Tense/Conditional, then questions."""
+    """Show explanation for the current Tense/Conditional, then questions with columns."""
     data_dict, item_key = get_current_data()
     if not data_dict or not item_key:
         return
@@ -727,7 +797,7 @@ def show_explanation_and_questions():
     st.header(info["name"])
     st.subheader("How is it formed?")
     for form_type, form_rule in info["formation"].items():
-        st.write(f"**{form_type}:** {form_rule}")
+        st.markdown(f"**{form_type}:** {form_rule}")
 
     st.subheader("When do we use it?")
     for usage in info["usage_explanation"]:
@@ -738,30 +808,47 @@ def show_explanation_and_questions():
             for ex in info["extra_examples"]:
                 st.write("- " + ex)
 
-    st.subheader("Practice Questions")
-
     usage_cases = info["usage_cases"]
     total_questions = len(usage_cases)
     answered_count = len(st.session_state.answers)
 
     if st.session_state.review_mode:
-        # Show review mode
         show_review(data_dict, item_key)
         return
 
-    st.write(f"Questions answered: {answered_count}/{total_questions}")
-    st.write("Below are several usage cases. Please answer each question accordingly.")
+    st.write("### Practice Questions")
+
+    # Show metrics: Questions answered vs. total
+    colA, colB = st.columns(2)
+    colA.metric("Questions Answered", f"{answered_count}")
+    colB.metric("Total Questions", f"{total_questions}")
+
+    # Also show a progress bar (0-100%)
+    progress_val = int((answered_count / total_questions) * 100)
+    st.progress(progress_val)
 
     # If all answered, celebrate
     if answered_count == total_questions:
         st.success(f"Congratulations, {personalized_name()}! You've answered all the questions!")
         st.markdown('<img src="https://media.giphy.com/media/5Zesu5VPNGJlm/giphy.gif" width="300">', unsafe_allow_html=True)
         st.balloons()
+
+        # Offer a "Download Certificate" button
+        category_name = st.session_state.selected_category
+        item_name = info["name"]
+        cert_buffer = create_certificate(personalized_name(), category_name, item_name)
+        st.download_button(
+            label="Download Your Certificate",
+            data=cert_buffer,
+            file_name="certificate.png",
+            mime="image/png"
+        )
+
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
 
-    # Display questions
+    # Display questions in a "better layout" using columns
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
@@ -774,29 +861,33 @@ def show_explanation_and_questions():
             st.write(f"Your answer: {user_answer}")
             continue
 
-        st.write(f"**{case['title']}**")
-        st.write(case["question"])
-        st.text_input("Your answer:", key=answer_key)
+        # New question layout with columns
+        q_col, a_col = st.columns([2, 3])
+        with q_col:
+            st.write(f"**{case['title']}**")
+            st.write(case["question"])
+        with a_col:
+            st.text_input("Your answer:", key=answer_key)
+            if st.button("Submit", key=submit_key):
+                user_answer = st.session_state.get(answer_key, "")
+                st.session_state.answers.append(user_answer)
+                st.session_state.submitted_questions.add(submit_key)
 
-        if st.button("Submit", key=submit_key):
-            user_answer = st.session_state.get(answer_key, "")
-            st.session_state.answers.append(user_answer)
-            st.session_state.submitted_questions.add(submit_key)
+                msg_index = len(st.session_state.answers) - 1
+                # Motivational message
+                if msg_index < len(st.session_state.randomized_messages):
+                    msg = st.session_state.randomized_messages[msg_index]
+                else:
+                    msg = st.session_state.randomized_messages[-1]
 
-            msg_index = len(st.session_state.answers) - 1
-            if msg_index < len(st.session_state.randomized_messages):
-                msg = st.session_state.randomized_messages[msg_index]
-            else:
-                msg = st.session_state.randomized_messages[-1]
+                # Personalize
+                if msg and msg[0].isupper():
+                    personalized_msg = f"{personalized_name()}, {msg[0].lower() + msg[1:]}"
+                else:
+                    personalized_msg = f"{personalized_name()}, {msg}"
 
-            # Personalize
-            if msg and msg[0].isupper():
-                personalized_msg = f"{personalized_name()}, {msg[0].lower() + msg[1:]}"
-            else:
-                personalized_msg = f"{personalized_name()}, {msg}"
-
-            st.success(personalized_msg)
-            st.write(f"Your answer: {user_answer}")
+                st.success(personalized_msg)
+                st.write(f"Your answer: {user_answer}")
 
 # ---------------------------------------------------------
 # Main
