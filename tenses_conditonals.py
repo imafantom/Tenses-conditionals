@@ -4,7 +4,7 @@ from PIL import Image, ImageDraw, ImageFont
 import io
 
 # ---------------------------------------------------------
-# PAGE CONFIG
+# Set up page config with a custom layout and title
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="Grammar Genius App",
@@ -12,7 +12,7 @@ st.set_page_config(
 )
 
 # ---------------------------------------------------------
-# SESSION STATE
+# Session State Initialization
 # ---------------------------------------------------------
 if "selected_category" not in st.session_state:
     st.session_state.selected_category = "Tenses"  # default category
@@ -53,7 +53,9 @@ if "randomized_messages" not in st.session_state:
     st.session_state.randomized_messages = motivational_sentences
 
 # ---------------------------------------------------------
-# CUSTOM CSS FOR LAYOUT
+# Custom CSS for Layout
+# 1) Dark blue sidebar
+# 2) Tweak main container
 # ---------------------------------------------------------
 st.markdown(
     """
@@ -63,10 +65,10 @@ st.markdown(
         background: linear-gradient(to bottom right, #92fe9d, #00c9ff);
     }
 
-    /* Sidebar styling */
+    /* Sidebar styling - dark blue background, white text */
     [data-testid="stSidebar"] {
-        background-color: #f0f0f0 !important;
-        color: #333333 !important;
+        background-color: #013369 !important; 
+        color: #ffffff !important;
     }
 
     /* Titles and subheaders coloring */
@@ -84,11 +86,6 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# ---------------------------------------------------------
-# DATA FOR TENSES & CONDITIONALS
-# ---------------------------------------------------------
-# (Truncated below for brevity, but assume they are the same
-#  as in the previous code snippet with 7 tenses and 5 conditionals.)
 # ---------------------------------------------------------
 # Data for Tenses
 # ---------------------------------------------------------
@@ -625,8 +622,9 @@ conditionals_data = {
     }
 }
 
+
 # ---------------------------------------------------------
-# HELPER FUNCTIONS
+# Helper Functions
 # ---------------------------------------------------------
 def reset_questions():
     """Reset answers, submitted questions, and review mode. Also reshuffle motivational messages."""
@@ -644,22 +642,30 @@ def create_certificate(name, category_name, item_name):
     """
     Generate a simple "Certificate" image in memory as a PIL image,
     then return it as a downloadable bytes buffer for st.download_button.
+    Fallback to default font if arial.ttf is not available.
     """
     # Create a blank image (width=800, height=600)
     img = Image.new('RGB', (800, 600), color=(255, 255, 200))
     draw = ImageDraw.Draw(img)
 
+    # Try loading 'arial.ttf'; if not found, use default
+    try:
+        title_font = ImageFont.truetype("arial.ttf", 50)
+        body_font = ImageFont.truetype("arial.ttf", 32)
+        small_font = ImageFont.truetype("arial.ttf", 24)
+    except OSError:
+        title_font = ImageFont.load_default()
+        body_font = ImageFont.load_default()
+        small_font = ImageFont.load_default()
+
     # Title
-    title_font = ImageFont.truetype("arial.ttf", 50)
     draw.text((80, 80), "Certificate of Achievement", fill=(0, 0, 0), font=title_font)
 
     # Body text
-    body_font = ImageFont.truetype("arial.ttf", 32)
     text_str = f"This certifies that\n{name}\nhas successfully completed\n{item_name} in {category_name}"
     draw.multiline_text((100, 200), text_str, fill=(10, 10, 10), font=body_font, align="center")
 
     # Signature or date area
-    small_font = ImageFont.truetype("arial.ttf", 24)
     draw.text((80, 500), "Date: __________________", fill=(0, 0, 0), font=small_font)
     draw.text((500, 500), "Signature: _____________", fill=(0, 0, 0), font=small_font)
 
@@ -670,7 +676,7 @@ def create_certificate(name, category_name, item_name):
     return img_buffer
 
 def get_current_data():
-    """Return the dictionary and item key for whichever category/item is chosen."""
+    """Return the dictionary (tenses or conditionals) and item key."""
     if st.session_state.selected_category == "Tenses":
         if st.session_state.selected_item_key:
             return tenses_data, st.session_state.selected_item_key
@@ -683,7 +689,7 @@ def get_current_data():
             return None, None
 
 # ---------------------------------------------------------
-# SIDEBAR: CHOOSE CATEGORY & ITEM
+# Sidebar: Choose Category & Item
 # ---------------------------------------------------------
 st.sidebar.title("Grammar Categories")
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
@@ -715,12 +721,11 @@ else:
         reset_questions()
 
 # ---------------------------------------------------------
-# MAIN SCREENS
+# Main Screens
 # ---------------------------------------------------------
 def show_welcome():
-    """A simpler welcome screen with no balloons or initial GIFs."""
+    """A simpler welcome screen - no balloons or initial GIFs."""
     st.title("Welcome to the Grammar Genius Game! 🎉✨🎮")
-
     st.write("""
     Get ready to boost your English grammar skills in a fun and interactive way!
     
@@ -812,14 +817,13 @@ def show_explanation_and_questions():
         submit_key = f"submit_{item_key}_{i}"
 
         if submit_key in st.session_state.submitted_questions:
-            # Already answered
             st.write(f"**{case['title']}**")
             st.write(case["question"])
             user_answer = st.session_state.get(answer_key, "")
             st.write(f"Your answer: {user_answer}")
             continue
 
-        # Better layout with columns
+        # Two-column question layout
         q_col, a_col = st.columns([2, 3])
         with q_col:
             st.write(f"**{case['title']}**")
@@ -838,7 +842,7 @@ def show_explanation_and_questions():
                 else:
                     msg = st.session_state.randomized_messages[-1]
 
-                # Personalized
+                # Personalize
                 if msg and msg[0].isupper():
                     personalized_msg = f"{personalized_name()}, {msg[0].lower() + msg[1:]}"
                 else:
