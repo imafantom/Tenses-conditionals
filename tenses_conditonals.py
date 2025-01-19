@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 ##############################################################################
-# 1) PAGE CONFIG -- No 'theme' param to avoid TypeError on older Streamlit
+# 1) PAGE CONFIG -- No 'theme' param to avoid older Streamlit TypeError
 ##############################################################################
 st.set_page_config(
     page_title="Grammar Genius App",
@@ -48,9 +48,6 @@ if "randomized_messages" not in st.session_state:
     random.shuffle(motivational_sentences)
     st.session_state.randomized_messages = motivational_sentences
 
-##############################################################################
-# 3) TENSES AND CONDITIONALS DATA
-#    Paste your 7 tenses and 5 conditionals data in the placeholders below
 ##############################################################################
 tenses_data = {
     "1": {
@@ -587,45 +584,164 @@ conditionals_data = {
 
 
 ##############################################################################
-# 4) HELPER: GENERATE DYNAMIC CSS BASED ON THEME & FONT SIZE
+def sample_tenses_data():
+    return {
+        "1": {
+            "name": "Present Simple",
+            "illustration_url": "https://example.com/present_simple.png",  # Themed illustration
+            "formation": {
+                "Positive": "Subject + base form (e.g., 'I eat')",
+                "Negative": "Subject + do not/does not + base form (e.g., 'I do not eat')",
+                "Question": "Do/Does + subject + base form? (e.g., 'Do you eat?')",
+                "Short answer": "'Yes, I do.' / 'No, I don't.'"
+            },
+            "usage_explanation": [
+                "General or always true facts.",
+                "Situations that are more or less permanent.",
+                "Habits or things done regularly."
+            ],
+            "usage_cases": [
+                {
+                    "title": "Expressing facts",
+                    "context": "Imagine you're explaining a science fact in class.",
+                    "question_type": "multiple_choice",
+                    "question": "Which sentence is correct for a general truth?",
+                    "choices": [
+                        "Water boils if you heated it up.",
+                        "Water boils if you heat it up.",
+                        "Water is boiling if you heat it up."
+                    ],
+                    "correct_choice": "Water boils if you heat it up."
+                },
+                {
+                    "title": "Describing habits",
+                    "context": "Consider your daily routine. Talk about what you do in the morning.",
+                    "question_type": "open_ended",
+                    "question": "What do you usually do after waking up?"
+                },
+                # ... up to 10 usage cases ...
+            ],
+            "extra_examples": [
+                "I always wake up at 7 AM.",
+                "My brother doesn't eat fish.",
+                "The Earth revolves around the Sun."
+            ]
+        },
+        "2": {
+            "name": "Past Simple",
+            "illustration_url": "https://example.com/past_simple.png",
+            "formation": {
+                "Positive": "Subject + past form (e.g., 'I ate')",
+                "Negative": "Subject + did not + base form (e.g., 'I did not eat')",
+                "Question": "Did + subject + base form? (e.g., 'Did you eat?')",
+                "Short answer": "'Yes, I did.' / 'No, I didn't.'"
+            },
+            "usage_explanation": [
+                "Completed actions in the past.",
+                "Actions that happened at a specific time.",
+            ],
+            "usage_cases": [
+                {
+                    "title": "Completed action at a specific time",
+                    "context": "Think about your last holiday. How do you describe it?",
+                    "question_type": "multiple_choice",
+                    "question": "Which is correct for describing a completed event?",
+                    "choices": [
+                        "I travel to Spain last year.",
+                        "I traveled to Spain last year.",
+                        "I will travel to Spain last year."
+                    ],
+                    "correct_choice": "I traveled to Spain last year."
+                },
+                {
+                    "title": "A specific past event",
+                    "question_type": "open_ended",
+                    "context": "Remember your last birthday celebration.",
+                    "question": "What did you do on your last birthday?"
+                },
+                # ... more usage cases ...
+            ],
+            "extra_examples": [
+                "I visited my grandparents last weekend.",
+                "They watched a movie yesterday."
+            ]
+        },
+        # ... 5 more tenses ...
+    }
+
+def sample_conditionals_data():
+    return {
+        "0": {
+            "name": "Zero Conditional",
+            "illustration_url": "https://example.com/zero_conditional.png",
+            "formation": {
+                "Positive": "If + present simple, present simple",
+                "Negative": "If + present simple, present simple (negative)",
+                "Question": "Do/Does + subject + base form in each clause",
+                "Short answer": "N/A"
+            },
+            "usage_explanation": [
+                "Facts always true under certain conditions.",
+                "General truths or cause-and-effect relationships."
+            ],
+            "usage_cases": [
+                {
+                    "title": "General truths",
+                    "context": "Explain a routine consequence with If... then structure.",
+                    "question_type": "open_ended",
+                    "question": "If you don't water plants, what usually happens?"
+                },
+                {
+                    "title": "Scientific facts",
+                    "context": "Think about simple cause-effect in science.",
+                    "question_type": "multiple_choice",
+                    "question": "If you heat ice, what happens?",
+                    "choices": [
+                        "It melts",
+                        "It froze",
+                        "It is melting"
+                    ],
+                    "correct_choice": "It melts"
+                }
+            ],
+            "extra_examples": [
+                "If you freeze water, it becomes ice.",
+                "If you touch a hot stove, you get burned."
+            ]
+        },
+        # ... 4 more conditionals ...
+    }
+
+# For demonstration, let's use the sample data above:
+tenses_data = sample_tenses_data()
+conditionals_data = sample_conditionals_data()
+
+##############################################################################
+# 4) HELPER: THEME & FONT SIZE
 ##############################################################################
 def generate_css(theme: str, font_size: str) -> str:
-    """
-    Returns a CSS string that sets the background, text colors, and font sizes 
-    for both the main page and the sidebar, ensuring everything scales:
-    headings, body text, examples, etc.
-
-    theme: "Dark" or "Light"
-    font_size: "Small", "Medium", or "Large"
-    """
-
-    # Let's define bigger sizes:
-    # - Small => 16px
-    # - Medium => 20px
-    # - Large => 24px
+    """Generate dynamic CSS for Dark/Light theme and bigger font sizes."""
+    # Increase sizes so they're obviously different:
     font_map = {
         "Small": "16px",
         "Medium": "20px",
         "Large": "24px"
     }
-    selected_font_size = font_map.get(font_size, "20px")  # default to Medium if missing
+    selected_font_size = font_map.get(font_size, "20px")  # default to Medium
 
     if theme == "Light":
         main_bg = "#ffffff"
         main_color = "#000000"
         sidebar_bg = "#f0f0f0"
         sidebar_color = "#000000"
-    else:  # "Dark"
+    else:
         main_bg = "#000000"
         main_color = "#ffffff"
         sidebar_bg = "#013369"
         sidebar_color = "#ffffff"
 
-    # We'll use a universal approach. The key is to override all typical 
-    # Streamlit containers, markdown containers, etc.
     css = f"""
     <style>
-    /* Main background & text color + universal font size */
     :root, html, body, [data-testid="stAppViewContainer"], 
     [data-testid="stAppViewBody"], [data-testid="stMarkdownContainer"],
     .stMarkdown, [class^="css-"], [data-testid="stHeader"], [data-testid="stSidebar"], 
@@ -635,14 +751,13 @@ def generate_css(theme: str, font_size: str) -> str:
         font-size: {selected_font_size} !important;
     }}
 
-    /* For headings: keep them orange, bigger than base font size */
+    /* Headings remain orange, scaled up by 1.25 */
     h1, h2, h3 {{
         color: #ff5722 !important;
         font-family: "Trebuchet MS", sans-serif;
         font-size: calc({selected_font_size} * 1.25) !important;
     }}
 
-    /* Force the sidebar background and text color */
     [data-testid="stSidebar"] {{
         background-color: {sidebar_bg} !important;
         color: {sidebar_color} !important;
@@ -652,7 +767,6 @@ def generate_css(theme: str, font_size: str) -> str:
         color: {sidebar_color} !important;
     }}
 
-    /* Padding at top if needed */
     main > div {{
         padding-top: 20px;
     }}
@@ -661,7 +775,7 @@ def generate_css(theme: str, font_size: str) -> str:
     return css
 
 ##############################################################################
-# 5) HELPER FUNCTIONS
+# 5) CORE HELPER FUNCTIONS
 ##############################################################################
 def reset_questions():
     st.session_state.answers = []
@@ -683,7 +797,7 @@ def get_current_data():
             return None, None
 
 ##############################################################################
-# 6) SIDEBAR: Category, Theme, and Font Size Toggles
+# 6) SIDEBAR: Category, Theme, Font Size
 ##############################################################################
 st.sidebar.title("Grammar Categories")
 
@@ -691,7 +805,7 @@ st.sidebar.title("Grammar Categories")
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
 st.session_state.selected_category = category
 
-# Build the selection for Tense or Conditional
+# Build the selection
 if st.session_state.selected_category == "Tenses":
     st.sidebar.subheader("Select a Tense")
     tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
@@ -719,11 +833,10 @@ else:
 
 # Theme choice
 theme_choice = st.sidebar.radio("Choose a Theme:", ["Dark", "Light"], index=0)
-
 # Font Size choice
 font_size_choice = st.sidebar.radio("Font Size:", ["Small", "Medium", "Large"], index=1)
 
-# Generate dynamic CSS
+# Apply dynamic CSS
 css_string = generate_css(theme_choice, font_size_choice)
 st.markdown(css_string, unsafe_allow_html=True)
 
@@ -731,6 +844,7 @@ st.markdown(css_string, unsafe_allow_html=True)
 # 7) SCREENS
 ##############################################################################
 def show_welcome():
+    """Welcome screen."""
     st.title("Welcome to the Grammar Genius Game! 🎉✨🎮")
     st.write("""
     Get ready to boost your English grammar skills in a fun and interactive way!
@@ -745,7 +859,7 @@ def show_welcome():
     """)
 
 def show_review(data_dict, item_key):
-    """Review screen: show answered questions, each with a trophy."""
+    """Review screen: show answered questions, each with a trophy 🏆."""
     st.header("Review Your Answers")
     usage_cases = data_dict[item_key]["usage_cases"]
     for i, case in enumerate(usage_cases):
@@ -753,9 +867,8 @@ def show_review(data_dict, item_key):
         st.write(f"**{case['title']}**")
         st.write(f"Question: {case['question']}")
         user_answer = st.session_state.get(answer_key, "")
-        # Show a trophy next to the user answer
         st.write(f"Your answer: {user_answer} 🏆")
-    st.write("Feel free to pick another item from the sidebar if you wish.")
+    st.write("Feel free to pick another item from the sidebar if you want.")
 
 def show_explanation_and_questions():
     data_dict, item_key = get_current_data()
@@ -763,6 +876,10 @@ def show_explanation_and_questions():
         return
 
     info = data_dict[item_key]
+
+    # Themed illustration at the top, if provided
+    if "illustration_url" in info and info["illustration_url"]:
+        st.image(info["illustration_url"], width=200)
 
     st.header(info["name"])
     st.subheader("How is it formed?")
@@ -773,8 +890,9 @@ def show_explanation_and_questions():
     for usage in info["usage_explanation"]:
         st.write("- " + usage)
 
-    with st.expander("More Examples"):
-        if "extra_examples" in info:
+    # More Examples
+    if "extra_examples" in info and info["extra_examples"]:
+        with st.expander("More Examples"):
             for ex in info["extra_examples"]:
                 st.write("- " + ex)
 
@@ -794,53 +912,91 @@ def show_explanation_and_questions():
     progress_val = int((answered_count / total_questions) * 100)
     st.progress(progress_val)
 
+    # If user completed all usage cases
     if answered_count == total_questions:
-        st.success(f"You've answered all 10 questions for {info['name']}!")
-        # Show a badge with a trophy
+        st.success(f"You've answered all {total_questions} questions for {info['name']}!")
         st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!* 🏆")
 
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
 
-    # Display each question
+    # Display usage cases
     for i, case in enumerate(usage_cases):
+        question_type = case.get("question_type", "open_ended")  # default
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
 
         if submit_key in st.session_state.submitted_questions:
+            # Already answered
             st.write(f"**{case['title']}**")
+            if "context" in case:
+                st.write(f"Context: {case['context']}")
             st.write(case["question"])
             user_answer = st.session_state.get(answer_key, "")
             st.write(f"Your answer: {user_answer}")
             continue
 
-        # Two-column question layout
-        q_col, a_col = st.columns([2, 3])
-        with q_col:
-            st.write(f"**{case['title']}**")
-            st.write(case["question"])
-        with a_col:
+        # Show context if provided
+        st.write(f"**{case['title']}**")
+        if "context" in case:
+            st.write(f"Context: {case['context']}")
+        st.write(case["question"])
+
+        if question_type == "multiple_choice":
+            # Provide a selectbox or radio with possible choices
+            choices = case.get("choices", [])
+            correct_choice = case.get("correct_choice", None)  
+            # For correctness, we store user selection in session_state
+            st.session_state.setdefault(answer_key, "")  # ensure it's in state
+
+            # Show the multiple choice
+            user_answer = st.selectbox(
+                "Select your answer:",
+                ["-- Select --"] + choices,
+                key=answer_key
+            )
+        else:
+            # open-ended
             st.text_input("Your answer:", key=answer_key)
-            if st.button("Submit", key=submit_key):
-                user_answer = st.session_state.get(answer_key, "")
-                st.session_state.answers.append(user_answer)
-                st.session_state.submitted_questions.add(submit_key)
 
-                msg_index = len(st.session_state.answers) - 1
-                if msg_index < len(st.session_state.randomized_messages):
-                    msg = st.session_state.randomized_messages[msg_index]
+        if st.button("Submit", key=submit_key):
+            user_answer = st.session_state.get(answer_key, "")
+            st.session_state.answers.append(user_answer)
+            st.session_state.submitted_questions.add(submit_key)
+
+            msg_index = len(st.session_state.answers) - 1
+            if msg_index < len(st.session_state.randomized_messages):
+                msg = st.session_state.randomized_messages[msg_index]
+            else:
+                msg = st.session_state.randomized_messages[-1]
+
+            # Check correctness if multiple_choice
+            if question_type == "multiple_choice":
+                correct_choice = case.get("correct_choice", None)
+                if correct_choice and user_answer == correct_choice:
+                    st.success("Correct! " + msg)
+                elif user_answer == "-- Select --":
+                    st.warning("You haven't selected an option yet.")
+                    # Remove from answered to allow retry
+                    st.session_state.answers.pop()
+                    st.session_state.submitted_questions.remove(submit_key)
+                    st.stop()  # re-render
                 else:
-                    msg = st.session_state.randomized_messages[-1]
-
-                # Display next motivational message
+                    st.warning("Incorrect. Try again?")
+                    # Remove from answered to allow retry
+                    st.session_state.answers.pop()
+                    st.session_state.submitted_questions.remove(submit_key)
+                    st.stop()
+            else:
+                # open-ended, always accept & show motivational message
                 if msg[0].isupper():
                     new_msg = f"{msg[0].lower() + msg[1:]}"
                 else:
                     new_msg = msg
-
                 st.success(new_msg)
-                st.write(f"Your answer: {user_answer}")
+
+            st.write(f"Your answer: {user_answer}")
 
 ##############################################################################
 # 8) MAIN
