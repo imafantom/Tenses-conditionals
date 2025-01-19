@@ -2,18 +2,18 @@ import streamlit as st
 import random
 
 ##############################################################################
-# 1. PAGE CONFIG  -- Place at the top, removing the theme dictionary
+# 1) PAGE CONFIG  -- no 'theme' dict to avoid TypeError on older Streamlit
 ##############################################################################
 st.set_page_config(
     page_title="Grammar Genius App",
-    layout="wide"  # More horizontal space
+    layout="wide"
 )
 
 ##############################################################################
-# 2. SESSION STATE
+# 2) SESSION STATE
 ##############################################################################
 if "selected_category" not in st.session_state:
-    st.session_state.selected_category = "Tenses"  # default category
+    st.session_state.selected_category = "Tenses"
 if "selected_item_key" not in st.session_state:
     st.session_state.selected_item_key = None
 if "answers" not in st.session_state:
@@ -48,39 +48,10 @@ if "randomized_messages" not in st.session_state:
     random.shuffle(motivational_sentences)
     st.session_state.randomized_messages = motivational_sentences
 
-##############################################################################
-# 3. CUSTOM CSS
-#    Force black main background, white text, dark-blue sidebar, orange headings
-##############################################################################
-st.markdown("""
-<style>
-/* Main page background black, default text white */
-body, [data-testid="stAppViewContainer"], [data-testid="stAppViewBody"] {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-/* Dark blue sidebar, white text */
-[data-testid="stSidebar"] {
-    background-color: #013369 !important;
-    color: #ffffff !important;
-}
-
-/* Headings remain orange (#ff5722) */
-h1, h2, h3 {
-    color: #ff5722 !important;
-    font-family: "Trebuchet MS", sans-serif;
-}
-
-/* Tweak the main container spacing if needed */
-main > div {
-    padding-top: 20px;
-}
-</style>
-""", unsafe_allow_html=True)
 
 ##############################################################################
-# 4. TENSES AND CONDITIONALS DATA -- Insert your actual data below
+# 3) TENSES AND CONDITIONALS DATA
+#    Insert your actual 7 tenses and 5 conditionals data below
 ##############################################################################
 tenses_data = {
     "1": {
@@ -617,10 +588,68 @@ conditionals_data = {
 
 
 ##############################################################################
-# 5. HELPER FUNCTIONS
+# 4) HELPER: GENERATE DYNAMIC CSS BASED ON THEME & FONT SIZE
+##############################################################################
+def generate_css(theme: str, font_size: str) -> str:
+    """
+    Returns a CSS string that sets the background, text colors, and font sizes 
+    according to the theme (Dark/Light) and the chosen font size (Small, Medium, Large).
+    """
+
+    # Map the user-friendly size to actual px
+    font_map = {"Small": "14px", "Medium": "16px", "Large": "18px"}
+    selected_font_size = font_map.get(font_size, "16px")  # default to Medium if missing
+
+    if theme == "Light":
+        main_bg = "#ffffff"
+        main_color = "#000000"
+        sidebar_bg = "#f0f0f0"
+        sidebar_color = "#000000"
+    else:
+        # Dark theme
+        main_bg = "#000000"
+        main_color = "#ffffff"
+        sidebar_bg = "#013369"
+        sidebar_color = "#ffffff"
+
+    # We also enlarge headings slightly (1.2x)
+    # The sidebar text must also adapt the same font size and color
+    css = f"""
+    <style>
+    /* Main page background, text color, and base font-size */
+    body, [data-testid="stAppViewContainer"], [data-testid="stAppViewBody"] {{
+        background-color: {main_bg} !important;
+        color: {main_color} !important;
+        font-size: {selected_font_size} !important;
+    }}
+
+    /* Sidebar background, text color, and font size */
+    [data-testid="stSidebar"] {{
+        background-color: {sidebar_bg} !important;
+    }}
+    [data-testid="stSidebar"] * {{
+        color: {sidebar_color} !important;
+        font-size: {selected_font_size} !important;
+    }}
+
+    /* Headings remain orange (#ff5722), but scale font size a bit more */
+    h1, h2, h3 {{
+        color: #ff5722 !important;
+        font-family: "Trebuchet MS", sans-serif;
+        font-size: calc({selected_font_size} * 1.2) !important;
+    }}
+
+    main > div {{
+        padding-top: 20px;
+    }}
+    </style>
+    """
+    return css
+
+##############################################################################
+# 5) HELPER FUNCTIONS
 ##############################################################################
 def reset_questions():
-    """Reset answers, submitted questions, and review mode. Also reshuffle motivational messages."""
     st.session_state.answers = []
     st.session_state.submitted_questions = set()
     st.session_state.review_mode = False
@@ -640,12 +669,15 @@ def get_current_data():
             return None, None
 
 ##############################################################################
-# 6. SIDEBAR
+# 6) SIDEBAR
 ##############################################################################
 st.sidebar.title("Grammar Categories")
+
+# Category toggle
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
 st.session_state.selected_category = category
 
+# Based on category, build the tenses or conditionals selection
 if st.session_state.selected_category == "Tenses":
     st.sidebar.subheader("Select a Tense")
     tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
@@ -671,8 +703,18 @@ else:
         st.session_state.selected_item_key = None
         reset_questions()
 
+# Theme toggle (Dark / Light)
+theme_choice = st.sidebar.radio("Choose a Theme:", ["Dark", "Light"], index=0)
+
+# Font size toggle (Small / Medium / Large)
+font_size_choice = st.sidebar.radio("Font Size:", ["Small", "Medium", "Large"], index=1)
+
+# Now generate the CSS based on user choices
+dynamic_css = generate_css(theme_choice, font_size_choice)
+st.markdown(dynamic_css, unsafe_allow_html=True)
+
 ##############################################################################
-# 7. SCREENS
+# 7) SCREENS
 ##############################################################################
 def show_welcome():
     """Welcome screen, no name input, no balloons."""
@@ -698,8 +740,9 @@ def show_review(data_dict, item_key):
         st.write(f"**{case['title']}**")
         st.write(f"Question: {case['question']}")
         user_answer = st.session_state.get(answer_key, "")
+        # Show a trophy next to the user answer
         st.write(f"Your answer: {user_answer} 🏆")
-    st.write("Feel free to pick another item from the sidebar if you wish.")
+    st.write("Feel free to pick another item from the sidebar if you want.")
 
 def show_explanation_and_questions():
     data_dict, item_key = get_current_data()
@@ -726,12 +769,12 @@ def show_explanation_and_questions():
     total_questions = len(usage_cases)
     answered_count = len(st.session_state.answers)
 
+    # If in review mode
     if st.session_state.review_mode:
         show_review(data_dict, item_key)
         return
 
     st.write("### Practice Questions")
-
     colA, colB = st.columns(2)
     colA.metric("Questions Answered", f"{answered_count}")
     colB.metric("Total Questions", f"{total_questions}")
@@ -739,16 +782,16 @@ def show_explanation_and_questions():
     progress_val = int((answered_count / total_questions) * 100)
     st.progress(progress_val)
 
+    # If user has completed all usage cases
     if answered_count == total_questions:
         st.success(f"You've answered all 10 questions for {info['name']}!")
-        # Show badge message with trophy
         st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!* 🏆")
 
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
 
-    # Show each question in columns
+    # Display each question in columns
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
@@ -777,7 +820,7 @@ def show_explanation_and_questions():
                 else:
                     msg = st.session_state.randomized_messages[-1]
 
-                # Show the message
+                # Display next motivational message
                 if msg[0].isupper():
                     new_msg = f"{msg[0].lower() + msg[1:]}"
                 else:
@@ -787,7 +830,7 @@ def show_explanation_and_questions():
                 st.write(f"Your answer: {user_answer}")
 
 ##############################################################################
-# 8. MAIN
+# 8) MAIN
 ##############################################################################
 def main():
     if st.session_state.selected_item_key is None:
