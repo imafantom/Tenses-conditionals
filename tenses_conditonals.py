@@ -2,7 +2,7 @@ import streamlit as st
 import random
 
 ##############################################################################
-# 1) PAGE CONFIG -- No 'theme' param to avoid TypeError on older Streamlit
+# 1) PAGE CONFIG -- no 'theme' param to avoid older Streamlit TypeError
 ##############################################################################
 st.set_page_config(
     page_title="Grammar Genius App",
@@ -48,9 +48,11 @@ if "randomized_messages" not in st.session_state:
     random.shuffle(motivational_sentences)
     st.session_state.randomized_messages = motivational_sentences
 
+
 ##############################################################################
 # 3) TENSES AND CONDITIONALS DATA
-#    Paste your 7 tenses and 5 conditionals data in the placeholders below
+#    Paste your actual data in these dictionaries, including the new fields:
+#    "illustration_url", "context", "question_type", "choices", "correct_choice"
 ##############################################################################
 tenses_data = {
     "1": {
@@ -586,73 +588,92 @@ conditionals_data = {
 }
 
 
+
 ##############################################################################
-# 4) HELPER: GENERATE DYNAMIC CSS BASED ON THEME & FONT SIZE
+# 4) GENERATE DYNAMIC CSS
 ##############################################################################
 def generate_css(theme: str, font_size: str) -> str:
     """
-    Returns a CSS string that sets the background, text colors, and font sizes 
-    for both the main page and the sidebar, ensuring everything scales:
-    headings, body text, examples, etc.
-
-    theme: "Dark" or "Light"
-    font_size: "Small", "Medium", or "Large"
+    Returns a CSS string that sets background, text colors, and forcibly
+    scales *all* text (including main body, sidebar, inputs, etc.).
+    
+    Also removes background from many Streamlit widget containers in sidebar.
     """
-
-    # Let's define bigger sizes:
-    # - Small => 16px
-    # - Medium => 20px
-    # - Large => 24px
+    # Larger differences in font sizes:
     font_map = {
         "Small": "16px",
         "Medium": "20px",
         "Large": "24px"
     }
-    selected_font_size = font_map.get(font_size, "20px")  # default to Medium if missing
+    selected_font_size = font_map.get(font_size, "20px")
 
     if theme == "Light":
         main_bg = "#ffffff"
         main_color = "#000000"
         sidebar_bg = "#f0f0f0"
         sidebar_color = "#000000"
-    else:  # "Dark"
+    else:
+        # Dark
         main_bg = "#000000"
         main_color = "#ffffff"
         sidebar_bg = "#013369"
         sidebar_color = "#ffffff"
 
-    # We'll use a universal approach. The key is to override all typical 
-    # Streamlit containers, markdown containers, etc.
+    # Universal override:
     css = f"""
     <style>
-    /* Main background & text color + universal font size */
-    :root, html, body, [data-testid="stAppViewContainer"], 
-    [data-testid="stAppViewBody"], [data-testid="stMarkdownContainer"],
-    .stMarkdown, [class^="css-"], [data-testid="stHeader"], [data-testid="stSidebar"], 
-    .css-1oe6wy4, .block-container {{
+    /* Force background & color on everything, plus universal font size */
+    :root, html, body,
+    [data-testid="stAppViewContainer"],
+    [data-testid="stAppViewBody"],
+    [data-testid="stMarkdownContainer"],
+    .stMarkdown, [class^="css-"],
+    [data-testid="stHeader"],
+    [data-testid="stSidebar"],
+    .css-1oe6wy4, .block-container,
+    /* Also specifically target these elements to override default backgrounds */
+    .stRadio, .stSelectbox, .stTextInput, .stCheckbox, .stRadio > div, .stSelectbox > div, .stTextInput > div, .stCheckbox > div {{
         background-color: {main_bg} !important;
         color: {main_color} !important;
         font-size: {selected_font_size} !important;
+        border: none !important;
     }}
 
-    /* For headings: keep them orange, bigger than base font size */
+    /* Attempt to remove the inner "box" on sidebar elements */
+    [data-testid="stSidebar"] .stRadio div, 
+    [data-testid="stSidebar"] .stSelectbox div,
+    [data-testid="stSidebar"] .stTextInput div,
+    [data-testid="stSidebar"] .stCheckbox div {{
+        background: transparent !important;
+        color: {sidebar_color} !important;
+        font-size: {selected_font_size} !important;
+        border: none !important;
+    }}
+
+    /* 
+     * Headings in orange, bigger font 
+     */
     h1, h2, h3 {{
         color: #ff5722 !important;
         font-family: "Trebuchet MS", sans-serif;
         font-size: calc({selected_font_size} * 1.25) !important;
     }}
 
-    /* Force the sidebar background and text color */
+    /* Sidebar background, text color, font size */
     [data-testid="stSidebar"] {{
         background-color: {sidebar_bg} !important;
         color: {sidebar_color} !important;
+        font-size: {selected_font_size} !important;
     }}
     [data-testid="stSidebar"] * {{
-        font-size: {selected_font_size} !important;
         color: {sidebar_color} !important;
+        font-size: {selected_font_size} !important;
+        background: transparent !important;
     }}
 
-    /* Padding at top if needed */
+    /* 
+     * Adjust top padding in main container 
+     */
     main > div {{
         padding-top: 20px;
     }}
@@ -670,7 +691,6 @@ def reset_questions():
     random.shuffle(st.session_state.randomized_messages)
 
 def get_current_data():
-    """Return the dictionary and item key for whichever Tense/Conditional is chosen."""
     if st.session_state.selected_category == "Tenses":
         if st.session_state.selected_item_key:
             return tenses_data, st.session_state.selected_item_key
@@ -683,19 +703,18 @@ def get_current_data():
             return None, None
 
 ##############################################################################
-# 6) SIDEBAR: Category, Theme, and Font Size Toggles
+# 6) SIDEBAR
 ##############################################################################
 st.sidebar.title("Grammar Categories")
 
-# Category radio
+# Category
 category = st.sidebar.radio("Select a category:", ["Tenses", "Conditionals"])
 st.session_state.selected_category = category
 
-# Build the selection for Tense or Conditional
 if st.session_state.selected_category == "Tenses":
     st.sidebar.subheader("Select a Tense")
     tense_options = ["Select a tense..."] + [f"{key}. {tenses_data[key]['name']}" for key in tenses_data]
-    selected_option = st.sidebar.selectbox("Choose a tense to practice:", tense_options)
+    selected_option = st.sidebar.selectbox("Choose a tense:", tense_options)
     if selected_option != "Select a tense...":
         current_key = selected_option.split('.')[0].strip()
         if current_key != st.session_state.selected_item_key:
@@ -707,7 +726,7 @@ if st.session_state.selected_category == "Tenses":
 else:
     st.sidebar.subheader("Select a Conditional")
     conditional_options = ["Select a conditional..."] + [f"{key}. {conditionals_data[key]['name']}" for key in conditionals_data]
-    selected_option = st.sidebar.selectbox("Choose a conditional to practice:", conditional_options)
+    selected_option = st.sidebar.selectbox("Choose a conditional:", conditional_options)
     if selected_option != "Select a conditional...":
         current_key = selected_option.split('.')[0].strip()
         if current_key != st.session_state.selected_item_key:
@@ -717,13 +736,11 @@ else:
         st.session_state.selected_item_key = None
         reset_questions()
 
-# Theme choice
+# Theme & Font
 theme_choice = st.sidebar.radio("Choose a Theme:", ["Dark", "Light"], index=0)
-
-# Font Size choice
 font_size_choice = st.sidebar.radio("Font Size:", ["Small", "Medium", "Large"], index=1)
 
-# Generate dynamic CSS
+# Apply the dynamic CSS
 css_string = generate_css(theme_choice, font_size_choice)
 st.markdown(css_string, unsafe_allow_html=True)
 
@@ -745,17 +762,16 @@ def show_welcome():
     """)
 
 def show_review(data_dict, item_key):
-    """Review screen: show answered questions, each with a trophy."""
     st.header("Review Your Answers")
     usage_cases = data_dict[item_key]["usage_cases"]
     for i, case in enumerate(usage_cases):
         answer_key = f"answer_{item_key}_{i}"
         st.write(f"**{case['title']}**")
-        st.write(f"Question: {case['question']}")
+        if "question" in case:
+            st.write(f"Question: {case['question']}")
         user_answer = st.session_state.get(answer_key, "")
-        # Show a trophy next to the user answer
         st.write(f"Your answer: {user_answer} 🏆")
-    st.write("Feel free to pick another item from the sidebar if you wish.")
+    st.write("Feel free to pick another item from the sidebar if you want.")
 
 def show_explanation_and_questions():
     data_dict, item_key = get_current_data()
@@ -763,6 +779,10 @@ def show_explanation_and_questions():
         return
 
     info = data_dict[item_key]
+
+    # Thematic illustration if provided
+    if "illustration_url" in info and info["illustration_url"]:
+        st.image(info["illustration_url"], width=200)
 
     st.header(info["name"])
     st.subheader("How is it formed?")
@@ -773,8 +793,9 @@ def show_explanation_and_questions():
     for usage in info["usage_explanation"]:
         st.write("- " + usage)
 
-    with st.expander("More Examples"):
-        if "extra_examples" in info:
+    # More Examples if present
+    if "extra_examples" in info:
+        with st.expander("More Examples"):
             for ex in info["extra_examples"]:
                 st.write("- " + ex)
 
@@ -795,52 +816,81 @@ def show_explanation_and_questions():
     st.progress(progress_val)
 
     if answered_count == total_questions:
-        st.success(f"You've answered all 10 questions for {info['name']}!")
-        # Show a badge with a trophy
+        st.success(f"You've answered all {total_questions} questions for {info['name']}!")
         st.markdown(f"**Badge Unlocked:** *{info['name']} Expert!* 🏆")
 
         if st.button("Review Your Answers"):
             st.session_state.review_mode = True
         return
 
-    # Display each question
+    # Loop usage cases
     for i, case in enumerate(usage_cases):
+        question_type = case.get("question_type", "open_ended")
         answer_key = f"answer_{item_key}_{i}"
         submit_key = f"submit_{item_key}_{i}"
 
         if submit_key in st.session_state.submitted_questions:
+            # Already answered
             st.write(f"**{case['title']}**")
+            if "context" in case:
+                st.write(f"Context: {case['context']}")
             st.write(case["question"])
             user_answer = st.session_state.get(answer_key, "")
             st.write(f"Your answer: {user_answer}")
             continue
 
-        # Two-column question layout
-        q_col, a_col = st.columns([2, 3])
-        with q_col:
-            st.write(f"**{case['title']}**")
-            st.write(case["question"])
-        with a_col:
+        st.write(f"**{case['title']}**")
+        if "context" in case:
+            st.write(f"Context: {case['context']}")
+        st.write(case["question"])
+
+        if question_type == "multiple_choice":
+            choices = case.get("choices", [])
+            correct_choice = case.get("correct_choice", None)
+            st.session_state.setdefault(answer_key, "")
+            user_answer = st.selectbox(
+                "Select your answer:",
+                ["-- Select --"] + choices,
+                key=answer_key
+            )
+        else:
+            # open_ended
             st.text_input("Your answer:", key=answer_key)
-            if st.button("Submit", key=submit_key):
-                user_answer = st.session_state.get(answer_key, "")
-                st.session_state.answers.append(user_answer)
-                st.session_state.submitted_questions.add(submit_key)
 
-                msg_index = len(st.session_state.answers) - 1
-                if msg_index < len(st.session_state.randomized_messages):
-                    msg = st.session_state.randomized_messages[msg_index]
+        if st.button("Submit", key=submit_key):
+            user_answer = st.session_state.get(answer_key, "")
+            st.session_state.answers.append(user_answer)
+            st.session_state.submitted_questions.add(submit_key)
+
+            msg_index = len(st.session_state.answers) - 1
+            if msg_index < len(st.session_state.randomized_messages):
+                msg = st.session_state.randomized_messages[msg_index]
+            else:
+                msg = st.session_state.randomized_messages[-1]
+
+            if question_type == "multiple_choice":
+                # check correctness
+                if correct_choice and user_answer == correct_choice:
+                    st.success("Correct! " + msg)
+                elif user_answer == "-- Select --":
+                    st.warning("You haven't selected an option yet.")
+                    st.session_state.answers.pop()
+                    st.session_state.submitted_questions.remove(submit_key)
+                    st.stop()
                 else:
-                    msg = st.session_state.randomized_messages[-1]
-
-                # Display next motivational message
-                if msg[0].isupper():
+                    st.warning("Incorrect. Try again?")
+                    st.session_state.answers.pop()
+                    st.session_state.submitted_questions.remove(submit_key)
+                    st.stop()
+            else:
+                # open_ended, always accept
+                if msg and msg[0].isupper():
                     new_msg = f"{msg[0].lower() + msg[1:]}"
                 else:
                     new_msg = msg
-
                 st.success(new_msg)
-                st.write(f"Your answer: {user_answer}")
+
+            st.write(f"Your answer: {user_answer}")
 
 ##############################################################################
 # 8) MAIN
